@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pool } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getCurrentAdmin, hashPassword } from '@/lib/auth';
 
 export async function GET() {
@@ -10,8 +10,8 @@ export async function GET() {
     }
 
     const [requestsRes, adminsRes] = await Promise.all([
-      pool.query('SELECT id, full_name, email, phone, reason, status, created_at FROM admin_requests ORDER BY created_at DESC'),
-      pool.query('SELECT id, username, role, is_active, created_at FROM admin_users ORDER BY created_at DESC'),
+      getDb().query('SELECT id, full_name, email, phone, reason, status, created_at FROM admin_requests ORDER BY created_at DESC'),
+      getDb().query('SELECT id, username, role, is_active, created_at FROM admin_users ORDER BY created_at DESC'),
     ]);
 
     return NextResponse.json({ requests: requestsRes.rows, admins: adminsRes.rows });
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       }
 
       const hash = hashPassword(password);
-      await pool.query(
+      await getDb().query(
         'INSERT INTO admin_users (username, password_hash, role, is_active) VALUES ($1, $2, $3, TRUE)',
         [username, hash, role === 'super_admin' ? 'super_admin' : 'admin']
       );
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Target admin is required' }, { status: 400 });
       }
 
-      await pool.query('UPDATE admin_users SET is_active = $1 WHERE id = $2', [Boolean(isActive), targetId]);
+      await getDb().query('UPDATE admin_users SET is_active = $1 WHERE id = $2', [Boolean(isActive), targetId]);
       return NextResponse.json({ ok: true, message: 'Admin status updated' });
     }
 
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Target admin is required' }, { status: 400 });
       }
 
-      await pool.query('DELETE FROM admin_users WHERE id = $1', [targetId]);
+      await getDb().query('DELETE FROM admin_users WHERE id = $1', [targetId]);
       return NextResponse.json({ ok: true, message: 'Admin removed' });
     }
 

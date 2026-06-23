@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pool } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    await pool.query(
+    await getDb().query(
       `INSERT INTO admin_requests (full_name, email, phone, reason) VALUES ($1, $2, $3, $4)`,
       [full_name.trim(), email || null, phone || null, reason || null]
     );

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pool } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { getCurrentAdmin } from '@/lib/auth';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +26,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       special_request,
     } = body;
 
-    const result = await pool.query(
+    const result = await getDb().query(
       `UPDATE reunion_participants SET
         name = $1,
         batch = $2,
@@ -77,7 +77,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     }
 
     const { id } = await params;
-    const result = await pool.query('DELETE FROM reunion_participants WHERE id = $1 RETURNING *', [id]);
+    const result = await getDb().query('DELETE FROM reunion_participants WHERE id = $1 RETURNING *', [id]);
 
     if (result.rowCount === 0) {
       return NextResponse.json({ error: 'Participant not found' }, { status: 404 });

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { pool } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 export async function GET() {
   try {
-    const result = await pool.query(
+    const result = await getDb().query(
       `SELECT * FROM reunion_participants ORDER BY created_at DESC`
     );
     return NextResponse.json(result.rows);
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       special_request,
     } = body;
 
-    const result = await pool.query(
+    const result = await getDb().query(
       `INSERT INTO reunion_participants (
         name,
         batch,

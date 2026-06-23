@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
-import { pool } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 const SESSION_COOKIE = 'reunion_admin_session';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-me';
@@ -48,7 +48,7 @@ export async function getCurrentAdmin(request?: NextRequest) {
 
   if (!session) return null;
 
-  const result = await pool.query('SELECT username, role FROM admin_users WHERE username = $1 AND is_active = TRUE', [session.username]);
+  const result = await getDb().query('SELECT username, role FROM admin_users WHERE username = $1 AND is_active = TRUE', [session.username]);
   const row = result.rows[0];
   return row ? { username: session.username, role: row.role } : null;
 }

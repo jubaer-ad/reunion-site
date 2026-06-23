@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pool } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import * as XLSX from 'xlsx';
 
 type ParticipantRow = {
@@ -21,7 +21,7 @@ type ParticipantRow = {
 
 export async function GET() {
   try {
-    const result = await pool.query(`SELECT * FROM reunion_participants ORDER BY created_at DESC`);
+    const result = await getDb().query(`SELECT * FROM reunion_participants ORDER BY created_at DESC`);
 
     const rows = result.rows.map((row: ParticipantRow) => ({
       id: row.id,
