@@ -110,9 +110,18 @@ export default function Home() {
   const [newAdminForm, setNewAdminForm] = useState({ username: '', password: '', role: 'admin' as 'admin' | 'super_admin' });
 
   const loadParticipants = async () => {
-    const res = await fetch('/api/participants');
-    const data = await res.json();
-    setParticipants(data);
+    try {
+      const res = await fetch('/api/participants');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setParticipants(data);
+      } else {
+        console.error('Unexpected participants response:', data);
+        setParticipants([]);
+      }
+    } catch {
+      setParticipants([]);
+    }
   };
 
   const loadAdminStatus = async () => {
