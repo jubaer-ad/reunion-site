@@ -688,8 +688,8 @@ export default function Home() {
                 <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
               </label>
               <label className="text-sm text-slate-300">
-                ব্যাচ (SSC পাসের সাল)
-                <input required type="number" value={form.batch} onChange={(e) => setForm({ ...form, batch: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                ব্যাচ (SSC পাসের সাল)<sup className="text-amber-400">*</sup>
+                <input required type="number" min={1900} max={2026} value={form.batch} onChange={(e) => setForm({ ...form, batch: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
               </label>
               <label className="text-sm text-slate-300">
                 পেশা
@@ -711,8 +711,8 @@ export default function Home() {
                 <input value={form.guest_details} onChange={(e) => setForm({ ...form, guest_details: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
               </label>
               <label className="text-sm text-slate-300">
-                ফোন নম্বর
-                <input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                ফোন নম্বর<sup className="text-amber-400">*</sup>
+                <input required value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
               </label>
               <label className="text-sm text-slate-300">
                 ইমেইল
