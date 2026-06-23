@@ -14,7 +14,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <footer className="mt-auto py-4 text-center text-[10px] text-slate-700/50">
+          <p>
+            Developed by A N M JUBAER
+            {' — '}
+            <a href="mailto:jubaerad1@gmail.com" className="hover:text-slate-500 transition">jubaerad1@gmail.com</a>
+            {' — '}
+            <a href="https://www.linkedin.com/in/anmjubaer/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-500 transition">LinkedIn</a>
+            {' — '}
+            <a href="tel:+8801580353942" className="hover:text-slate-500 transition">+8801580353942</a>
+          </p>
+        </footer>
+      </body>
     </html>
   );
 }
