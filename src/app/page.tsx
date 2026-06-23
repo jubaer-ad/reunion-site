@@ -680,7 +680,7 @@ export default function Home() {
           <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-black/10">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">{editingId ? 'তথ্য আপডেট করুন' : 'নতুন রেজিস্ট্রেশন'}</h2>
-              <button type="button" onClick={() => { setForm(initialForm); setEditingId(null); }} className="text-sm text-amber-400">রিসেট</button>
+              <button type="button" onClick={() => { setForm(initialForm); setEditingId(null); }} className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-rose-700 hover:bg-rose-950/30 hover:text-rose-300">রিসেট</button>
             </div>
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <label className="text-sm text-slate-300">
