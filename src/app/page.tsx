@@ -453,7 +453,7 @@ export default function Home() {
         <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl shadow-black/20">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-6">
-              <img src="/kalaia_high_reunion_2026.png" alt="কালাইয়া মাধ্যমিক বিদ্যালয় পুনর্মিলনী ২০২৬" className="h-24 w-24 shrink-0 rounded-2xl border border-slate-700 object-cover" />
+              <img src="/kalaia_high_reunion_2026.png" alt="কালাইয়া মাধ্যমিক বিদ্যালয় পুনর্মিলনী ২০২৬" className="h-24 w-24 shrink-0 self-center rounded-2xl border border-slate-700 object-cover" />
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">কালাইয়া মাধ্যমিক বিদ্যালয়</p>
                 <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">প্রাক্তন শিক্ষার্থী পুনর্মিলনী অনুষ্ঠান-২০২৬</h1>
