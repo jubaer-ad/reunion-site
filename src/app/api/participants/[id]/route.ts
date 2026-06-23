@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
+import { getCurrentAdmin } from '@/lib/auth';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const admin = await getCurrentAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const {
@@ -65,6 +71,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const admin = await getCurrentAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const result = await pool.query('DELETE FROM reunion_participants WHERE id = $1 RETURNING *', [id]);
 
