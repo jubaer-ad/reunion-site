@@ -45,6 +45,11 @@ export async function GET() {
     `);
 
     await getDb().query(`
+      ALTER TABLE admin_users
+      ADD COLUMN IF NOT EXISTS password_reset_required BOOLEAN DEFAULT FALSE
+    `);
+
+    await getDb().query(`
       CREATE TABLE IF NOT EXISTS admin_requests (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         full_name TEXT NOT NULL,

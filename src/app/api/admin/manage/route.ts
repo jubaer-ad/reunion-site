@@ -11,7 +11,7 @@ export async function GET() {
 
     const [requestsRes, adminsRes] = await Promise.all([
       getDb().query('SELECT id, full_name, email, phone, reason, status, created_at FROM admin_requests ORDER BY created_at DESC'),
-      getDb().query('SELECT id, username, role, is_active, created_at FROM admin_users ORDER BY created_at DESC'),
+      getDb().query('SELECT id, username, role, is_active, password_reset_required, created_at FROM admin_users ORDER BY created_at DESC'),
     ]);
 
     return NextResponse.json({ requests: requestsRes.rows, admins: adminsRes.rows });
@@ -60,6 +60,19 @@ export async function POST(request: Request) {
 
       await getDb().query('DELETE FROM admin_users WHERE id = $1', [targetId]);
       return NextResponse.json({ ok: true, message: 'Admin removed' });
+    }
+
+    if (action === 'reset_password') {
+      if (!targetId) {
+        return NextResponse.json({ error: 'Target admin is required' }, { status: 400 });
+      }
+
+      const placeholderHash = hashPassword(Math.random().toString(36));
+      await getDb().query(
+        'UPDATE admin_users SET password_reset_required = TRUE, password_hash = $1 WHERE id = $2',
+        [placeholderHash, targetId]
+      );
+      return NextResponse.json({ ok: true, message: 'Password reset. Admin must set a new password on next login.' });
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

@@ -38,6 +38,7 @@ type AdminState = {
   isAdmin: boolean;
   username: string | null;
   role: 'admin' | 'super_admin' | null;
+  passwordResetRequired: boolean;
 };
 
 type LoginFormState = {
@@ -98,7 +99,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [adminState, setAdminState] = useState<AdminState>({ isAdmin: false, username: null, role: null });
+  const [adminState, setAdminState] = useState<AdminState>({ isAdmin: false, username: null, role: null, passwordResetRequired: false });
   const [loginForm, setLoginForm] = useState<LoginFormState>(initialLoginForm);
   const [requestForm, setRequestForm] = useState<AdminRequestFormState>(initialAdminRequestForm);
   const [authMessage, setAuthMessage] = useState('');
@@ -109,6 +110,9 @@ export default function Home() {
   const [managementData, setManagementData] = useState<{ requests: Array<Record<string, unknown>>; admins: Array<Record<string, unknown>> }>({ requests: [], admins: [] });
   const [managementMessage, setManagementMessage] = useState('');
   const [newAdminForm, setNewAdminForm] = useState({ username: '', password: '', role: 'admin' as 'admin' | 'super_admin' });
+  const [setPasswordForm, setSetPasswordForm] = useState({ password: '', confirm: '' });
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState('');
 
   const loadParticipants = async () => {
     try {
@@ -129,9 +133,10 @@ export default function Home() {
     try {
       const res = await fetch('/api/admin/me');
       const data = await res.json();
-      setAdminState({ isAdmin: Boolean(data.isAdmin), username: data.username ?? null, role: data.role ?? null });
+      setAdminState({ isAdmin: Boolean(data.isAdmin), username: data.username ?? null, role: data.role ?? null, passwordResetRequired: Boolean(data.passwordResetRequired) });
+
     } catch {
-      setAdminState({ isAdmin: false, username: null, role: null });
+      setAdminState({ isAdmin: false, username: null, role: null, passwordResetRequired: false });
     }
   };
 
@@ -301,7 +306,7 @@ export default function Home() {
     setIsSubmittingLogout(true);
     try {
       await fetch('/api/admin/logout', { method: 'POST' });
-      setAdminState({ isAdmin: false, username: null, role: null });
+      setAdminState({ isAdmin: false, username: null, role: null, passwordResetRequired: false });
       setAuthMessage('লগআউট হয়েছে।');
     } finally {
       setIsSubmittingLogout(false);
@@ -393,6 +398,55 @@ export default function Home() {
     }
   };
 
+  const handleResetPassword = async (id: string) => {
+    if (!window.confirm('এই অ্যাডমিনের পাসওয়ার্ড রিসেট করতে চান? পরবর্তী লগইনে তাকে নতুন পাসওয়ার্ড সেট করতে হবে।')) return;
+    try {
+      const res = await fetch('/api/admin/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset_password', targetId: id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'পাসওয়ার্ড রিসেট করা যায়নি।');
+      setManagementMessage('পাসওয়ার্ড রিসেট করা হয়েছে।');
+      await loadManagementData();
+    } catch (error) {
+      setManagementMessage(error instanceof Error ? error.message : 'পাসওয়ার্ড রিসেট করা যায়নি।');
+    }
+  };
+
+  const handleSetPassword = async (event: FormEvent) => {
+    event.preventDefault();
+    setPasswordMessage('');
+
+    if (!setPasswordForm.password || setPasswordForm.password.length < 4) {
+      setPasswordMessage('পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে।');
+      return;
+    }
+    if (setPasswordForm.password !== setPasswordForm.confirm) {
+      setPasswordMessage('পাসওয়ার্ড মিলছে না।');
+      return;
+    }
+
+    setIsSettingPassword(true);
+    try {
+      const res = await fetch('/api/admin/set-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: setPasswordForm.password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'পাসওয়ার্ড সেট করা যায়নি।');
+      setAdminState(prev => ({ ...prev, passwordResetRequired: false }));
+      setSetPasswordForm({ password: '', confirm: '' });
+      setPasswordMessage('পাসওয়ার্ড সফলভাবে সেট করা হয়েছে।');
+    } catch (error) {
+      setPasswordMessage(error instanceof Error ? error.message : 'পাসওয়ার্ড সেট করা যায়নি।');
+    } finally {
+      setIsSettingPassword(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
@@ -434,6 +488,32 @@ export default function Home() {
           </section>
         ) : null}
 
+        {adminState.isAdmin && adminState.passwordResetRequired ? (
+          <section className="rounded-3xl border border-amber-700/50 bg-amber-950/20 p-6 shadow-xl shadow-black/10">
+            <div className="mx-auto max-w-md">
+              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-400">পাসওয়ার্ড সেটআপ</p>
+              <h2 className="mt-2 text-xl font-semibold">আপনার পাসওয়ার্ড সেট করুন</h2>
+              <p className="mt-2 text-sm text-slate-400">আপনার অ্যাকাউন্টের জন্য একটি নতুন পাসওয়ার্ড সেট করুন। পাসওয়ার্ড সেট করার আগে অন্যান্য ফিচার ব্যবহার করা যাবে না।</p>
+              <form onSubmit={handleSetPassword} className="mt-6">
+                <div className="space-y-4">
+                  <label className="block text-sm text-slate-300">
+                    নতুন পাসওয়ার্ড
+                    <input type="password" value={setPasswordForm.password} onChange={(e) => setSetPasswordForm({ ...setPasswordForm, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" minLength={4} placeholder="কমপক্ষে ৪ অক্ষর" />
+                  </label>
+                  <label className="block text-sm text-slate-300">
+                    পাসওয়ার্ড নিশ্চিত করুন
+                    <input type="password" value={setPasswordForm.confirm} onChange={(e) => setSetPasswordForm({ ...setPasswordForm, confirm: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" minLength={4} />
+                  </label>
+                </div>
+                {passwordMessage ? <p className="mt-4 text-sm text-amber-400">{passwordMessage}</p> : null}
+                <button type="submit" disabled={isSettingPassword} className="mt-6 w-full rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
+                  {isSettingPassword ? 'সেট করা হচ্ছে...' : 'পাসওয়ার্ড সেট করুন'}
+                </button>
+              </form>
+            </div>
+          </section>
+        ) : null}
+
         {showAuthPanel ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => { setShowAuthPanel(null); setAuthMessage(''); }}>
             <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl shadow-black/50" onClick={(e) => e.stopPropagation()}>
@@ -448,14 +528,15 @@ export default function Home() {
                   <form onSubmit={handleLogin} className="mt-6">
                     <div className="space-y-4">
                       <label className="block text-sm text-slate-300">
-                        ইউজারনেম
+                        ইউজারনেম / ইমেইল
                         <input value={loginForm.username} onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
                       </label>
                       <label className="block text-sm text-slate-300">
                         পাসওয়ার্ড
-                        <input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                        <input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" placeholder="নতুন অনুমোদিত অ্যাডমিন হলে খালি রাখুন" />
                       </label>
                     </div>
+                    <p className="mt-3 text-xs text-amber-400/70">নতুন অনুমোদিত অ্যাডমিন বা পাসওয়ার্ড রিসেট করা অ্যাকাউন্ট: পাসওয়ার্ড খালি রেখে শুধু ইউজারনেম দিয়ে লগইন করুন। পরবর্তী পৃষ্ঠায় আপনি নিজের পাসওয়ার্ড সেট করতে পারবেন।</p>
                     {authMessage ? <p className="mt-4 text-sm text-amber-400">{authMessage}</p> : null}
                     <button type="submit" disabled={isSubmittingLogin} className="mt-6 w-full rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
                       {isSubmittingLogin ? 'লগইন হচ্ছে...' : 'লগইন'}
@@ -516,7 +597,7 @@ export default function Home() {
           </div>
         </section>
 
-        {adminState.isAdmin && adminState.role === 'super_admin' ? (
+        {adminState.isAdmin && adminState.role === 'super_admin' && !adminState.passwordResetRequired ? (
           <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-black/10">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -579,10 +660,11 @@ export default function Home() {
                       <div key={String(admin.id)} className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-sm">
                         <div className="flex items-center justify-between gap-3">
                           <p className="font-semibold">{String(admin.username)}</p>
-                          <span className="rounded-full bg-slate-800 px-2 py-1 text-xs">{String(admin.role)}</span>
+                          <span className="rounded-full bg-slate-800 px-2 py-1 text-xs">{String(admin.role)}{admin.password_reset_required ? ' · Reset Pending' : ''}</span>
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <button onClick={() => handleAdminToggle(String(admin.id), !(admin.is_active === true))} className="rounded-lg bg-slate-800 px-3 py-1 text-xs">{admin.is_active ? 'Deactivate' : 'Activate'}</button>
+                          <button onClick={() => handleResetPassword(String(admin.id))} className="rounded-lg bg-amber-600 px-3 py-1 text-xs">Reset Password</button>
                           <button onClick={() => handleAdminDelete(String(admin.id))} className="rounded-lg bg-rose-700 px-3 py-1 text-xs">Delete</button>
                         </div>
                       </div>

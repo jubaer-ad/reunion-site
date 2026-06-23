@@ -21,19 +21,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
 
       const username = requestData.email || requestData.full_name.replace(/\s+/g, '').toLowerCase();
-      const password = `${requestData.full_name.replace(/\s+/g, '').toLowerCase()}123!`;
-      const hashed = hashPassword(password);
       const roleValue = role === 'super_admin' ? 'super_admin' : 'admin';
+      const placeholderHash = hashPassword(Math.random().toString(36));
 
       await getDb().query(
-        `INSERT INTO admin_users (username, password_hash, role, is_active)
-         VALUES ($1, $2, $3, TRUE)
-         ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, is_active = TRUE`,
-        [username, hashed, roleValue]
+        `INSERT INTO admin_users (username, password_hash, role, is_active, password_reset_required)
+         VALUES ($1, $2, $3, TRUE, TRUE)
+         ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, is_active = TRUE, password_reset_required = TRUE`,
+        [username, placeholderHash, roleValue]
       );
 
       await getDb().query('UPDATE admin_requests SET status = $1 WHERE id = $2', ['approved', id]);
-      return NextResponse.json({ ok: true, username, password });
+      return NextResponse.json({ ok: true, username, message: 'Admin approved. They must set a password on first login.' });
     }
 
     if (action === 'reject') {

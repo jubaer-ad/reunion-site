@@ -8,7 +8,7 @@ export async function GET() {
       return NextResponse.json({ isAdmin: false });
     }
 
-    return NextResponse.json({ isAdmin: true, username: admin.username, role: admin.role });
+    return NextResponse.json({ isAdmin: true, username: admin.username, role: admin.role, passwordResetRequired: admin.passwordResetRequired });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to resolve session' }, { status: 500 });

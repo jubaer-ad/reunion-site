@@ -48,9 +48,9 @@ export async function getCurrentAdmin(request?: NextRequest) {
 
   if (!session) return null;
 
-  const result = await getDb().query('SELECT username, role FROM admin_users WHERE username = $1 AND is_active = TRUE', [session.username]);
+  const result = await getDb().query('SELECT username, role, password_reset_required FROM admin_users WHERE username = $1 AND is_active = TRUE', [session.username]);
   const row = result.rows[0];
-  return row ? { username: session.username, role: row.role } : null;
+  return row ? { username: session.username, role: row.role, passwordResetRequired: Boolean(row.password_reset_required) } : null;
 }
 
 export function hashPassword(password: string) {
