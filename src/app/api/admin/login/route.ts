@@ -6,14 +6,14 @@ export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
 
-    const result = await pool.query('SELECT username, password_hash FROM admin_users WHERE username = $1 AND is_active = TRUE', [username]);
+    const result = await pool.query('SELECT username, password_hash, role FROM admin_users WHERE username = $1 AND is_active = TRUE', [username]);
     const admin = result.rows[0];
 
     if (!admin || !verifyPassword(password, admin.password_hash)) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const response = NextResponse.json({ ok: true, username: admin.username });
+    const response = NextResponse.json({ ok: true, username: admin.username, role: admin.role });
     await setSessionCookie(admin.username);
 
     return response;

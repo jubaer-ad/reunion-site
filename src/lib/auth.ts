@@ -11,6 +11,13 @@ export type AdminSession = {
   issuedAt: number;
 };
 
+export type AdminUserRole = 'admin' | 'super_admin';
+
+export type AdminUser = {
+  username: string;
+  role: AdminUserRole;
+};
+
 function createSignature(payload: string) {
   return createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
 }
@@ -41,8 +48,9 @@ export async function getCurrentAdmin(request?: NextRequest) {
 
   if (!session) return null;
 
-  const result = await pool.query('SELECT username FROM admin_users WHERE username = $1 AND is_active = TRUE', [session.username]);
-  return result.rows[0] ? { username: session.username } : null;
+  const result = await pool.query('SELECT username, role FROM admin_users WHERE username = $1 AND is_active = TRUE', [session.username]);
+  const row = result.rows[0];
+  return row ? { username: session.username, role: row.role } : null;
 }
 
 export function hashPassword(password: string) {

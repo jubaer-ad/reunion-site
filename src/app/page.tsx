@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 type Participant = {
   id: string;
@@ -34,6 +34,24 @@ type FormState = {
   special_request: string;
 };
 
+type AdminState = {
+  isAdmin: boolean;
+  username: string | null;
+  role: 'admin' | 'super_admin' | null;
+};
+
+type LoginFormState = {
+  username: string;
+  password: string;
+};
+
+type AdminRequestFormState = {
+  full_name: string;
+  email: string;
+  phone: string;
+  reason: string;
+};
+
 const initialForm: FormState = {
   name: '',
   batch: '',
@@ -47,6 +65,18 @@ const initialForm: FormState = {
   address: '',
   notes: '',
   special_request: '',
+};
+
+const initialLoginForm: LoginFormState = {
+  username: '',
+  password: '',
+};
+
+const initialAdminRequestForm: AdminRequestFormState = {
+  full_name: '',
+  email: '',
+  phone: '',
+  reason: '',
 };
 
 const professions = [
@@ -68,6 +98,16 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [adminState, setAdminState] = useState<AdminState>({ isAdmin: false, username: null, role: null });
+  const [loginForm, setLoginForm] = useState<LoginFormState>(initialLoginForm);
+  const [requestForm, setRequestForm] = useState<AdminRequestFormState>(initialAdminRequestForm);
+  const [authMessage, setAuthMessage] = useState('');
+  const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [isSubmittingLogout, setIsSubmittingLogout] = useState(false);
+  const [managementData, setManagementData] = useState<{ requests: Array<Record<string, unknown>>; admins: Array<Record<string, unknown>> }>({ requests: [], admins: [] });
+  const [managementMessage, setManagementMessage] = useState('');
+  const [newAdminForm, setNewAdminForm] = useState({ username: '', password: '', role: 'admin' as 'admin' | 'super_admin' });
 
   const loadParticipants = async () => {
     const res = await fetch('/api/participants');
@@ -75,9 +115,26 @@ export default function Home() {
     setParticipants(data);
   };
 
+  const loadAdminStatus = async () => {
+    try {
+      const res = await fetch('/api/admin/me');
+      const data = await res.json();
+      setAdminState({ isAdmin: Boolean(data.isAdmin), username: data.username ?? null, role: data.role ?? null });
+    } catch {
+      setAdminState({ isAdmin: false, username: null, role: null });
+    }
+  };
+
   useEffect(() => {
-    loadParticipants();
+    void loadParticipants();
+    void loadAdminStatus();
   }, []);
+
+  useEffect(() => {
+    if (adminState.isAdmin && adminState.role === 'super_admin') {
+      void loadManagementData();
+    }
+  }, [adminState.isAdmin, adminState.role]);
 
   const filteredParticipants = useMemo(() => {
     const term = search.toLowerCase();
@@ -89,10 +146,16 @@ export default function Home() {
 
   const totalGuests = participants.reduce((sum, item) => sum + Number(item.guest_count || 0), 0);
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
     setMessage('');
+
+    if (editingId && !adminState.isAdmin) {
+      setMessage('এডিট করতে অ্যাডমিন লগইন করুন।');
+      setIsLoading(false);
+      return;
+    }
 
     const payload = {
       ...form,
@@ -101,28 +164,37 @@ export default function Home() {
     };
 
     try {
-      const res = await fetch('/api/participants', {
-        method: editingId ? 'PUT' : 'POST',
+      const url = editingId ? `/api/participants/${editingId}` : '/api/participants';
+      const method = editingId ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, id: editingId }),
+        body: JSON.stringify(payload),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error('Failed to save participant');
+        throw new Error(data.error || 'Failed to save participant');
       }
 
       setForm(initialForm);
       setEditingId(null);
       setMessage(editingId ? 'সফলভাবে আপডেট করা হয়েছে।' : 'সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে।');
       await loadParticipants();
-    } catch {
-      setMessage('দুঃখিত, তথ্য সংরক্ষণ করা যায়নি।');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'দুঃখিত, তথ্য সংরক্ষণ করা যায়নি।');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleEdit = (participant: Participant) => {
+    if (!adminState.isAdmin) {
+      setMessage('এডিট করতে অ্যাডমিন লগইন করুন।');
+      return;
+    }
+
     setEditingId(participant.id);
     setForm({
       name: participant.name,
@@ -141,18 +213,172 @@ export default function Home() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!adminState.isAdmin) {
+      setMessage('ডিলিট করতে অ্যাডমিন লগইন করুন।');
+      return;
+    }
+
     const confirmed = window.confirm('আপনি কি নিশ্চিতভাবে মুছতে চান?');
     if (!confirmed) return;
 
     const res = await fetch(`/api/participants/${id}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+
     if (res.ok) {
       setMessage('তথ্য সফলভাবে মুছে ফেলা হয়েছে।');
       await loadParticipants();
+    } else {
+      setMessage(data.error || 'ডিলিট করা যায়নি।');
+    }
+  };
+
+  const handleLogin = async (event: FormEvent) => {
+    event.preventDefault();
+    setIsSubmittingLogin(true);
+    setAuthMessage('');
+
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginForm),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'লগইন হয়নি।');
+      }
+
+      setAuthMessage('লগইন সফল হয়েছে।');
+      setLoginForm(initialLoginForm);
+      await loadAdminStatus();
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : 'লগইন হয়নি।');
+    } finally {
+      setIsSubmittingLogin(false);
+    }
+  };
+
+  const handleAdminRequest = async (event: FormEvent) => {
+    event.preventDefault();
+    setIsSubmittingRequest(true);
+    setAuthMessage('');
+
+    try {
+      const res = await fetch('/api/admin/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestForm),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'অনুরোধ জমা হয়নি।');
+      }
+
+      setAuthMessage('অ্যাডমিন অনুরোধ জমা হয়েছে। আপনি প্রয়োজন হলে ডাটাবেসে অ্যাডমিন তৈরি করবেন।');
+      setRequestForm(initialAdminRequestForm);
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : 'অনুরোধ জমা হয়নি।');
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setIsSubmittingLogout(true);
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      setAdminState({ isAdmin: false, username: null, role: null });
+      setAuthMessage('লগআউট হয়েছে।');
+    } finally {
+      setIsSubmittingLogout(false);
     }
   };
 
   const exportExcel = () => {
     window.location.href = '/api/participants/export';
+  };
+
+  const loadManagementData = async () => {
+    if (!adminState.isAdmin || adminState.role !== 'super_admin') return;
+
+    try {
+      const res = await fetch('/api/admin/manage');
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setManagementData({ requests: data.requests || [], admins: data.admins || [] });
+      }
+    } catch {
+      setManagementData({ requests: [], admins: [] });
+    }
+  };
+
+  const handleRequestDecision = async (requestId: string, action: 'approve' | 'reject') => {
+    try {
+      const res = await fetch(`/api/admin/requests/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'অপারেশন ব্যর্থ হয়েছে।');
+      setManagementMessage('অনুরোধ আপডেট করা হয়েছে।');
+      await loadManagementData();
+    } catch (error) {
+      setManagementMessage(error instanceof Error ? error.message : 'অপারেশন ব্যর্থ হয়েছে।');
+    }
+  };
+
+  const handleCreateAdmin = async (event: FormEvent) => {
+    event.preventDefault();
+    try {
+      const res = await fetch('/api/admin/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create_admin', ...newAdminForm }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'অ্যাডমিন তৈরি করা যায়নি।');
+      setManagementMessage('অ্যাডমিন তৈরি করা হয়েছে।');
+      setNewAdminForm({ username: '', password: '', role: 'admin' });
+      await loadManagementData();
+    } catch (error) {
+      setManagementMessage(error instanceof Error ? error.message : 'অ্যাডমিন তৈরি করা যায়নি।');
+    }
+  };
+
+  const handleAdminToggle = async (id: string, isActive: boolean) => {
+    try {
+      const res = await fetch('/api/admin/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle_admin', targetId: id, isActive }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'স্ট্যাটাস আপডেট করা যায়নি।');
+      setManagementMessage('অ্যাডমিন স্ট্যাটাস আপডেট করা হয়েছে।');
+      await loadManagementData();
+    } catch (error) {
+      setManagementMessage(error instanceof Error ? error.message : 'স্ট্যাটাস আপডেট করা যায়নি।');
+    }
+  };
+
+  const handleAdminDelete = async (id: string) => {
+    if (!window.confirm('এই অ্যাডমিন মুছে দিতে চান?')) return;
+    try {
+      const res = await fetch('/api/admin/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_admin', targetId: id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'অ্যাডমিন মুছে ফেলা যায়নি।');
+      setManagementMessage('অ্যাডমিন মুছে ফেলা হয়েছে।');
+      await loadManagementData();
+    } catch (error) {
+      setManagementMessage(error instanceof Error ? error.message : 'অ্যাডমিন মুছে ফেলা যায়নি।');
+    }
   };
 
   return (
@@ -165,6 +391,75 @@ export default function Home() {
             এই পৃষ্ঠায় অংশগ্রহণকারীরা নিজেদের তথ্য রেজিস্ট্রেশন করতে পারবেন, এবং reunion committee সহজে তালিকা অনুসন্ধান, আপডেট ও এক্সেল ডাউনলোড করতে পারবেন।
           </p>
         </header>
+
+        <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-black/10">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-400">অ্যাডমিন toegang</p>
+              <p className="mt-2 text-sm text-slate-300">
+                {adminState.isAdmin ? `লগইন করা আছে — ${adminState.username}` : 'এডিট ও ডিলিট করতে অ্যাডমিন লগইন প্রয়োজন।'}
+              </p>
+            </div>
+            {adminState.isAdmin ? (
+              <button onClick={handleLogout} disabled={isSubmittingLogout} className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 disabled:opacity-60">
+                {isSubmittingLogout ? 'লগআউট হচ্ছে...' : 'লগআউট'}
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
+            {!adminState.isAdmin ? (
+              <form onSubmit={handleLogin} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                <h2 className="text-lg font-semibold">অ্যাডমিন লগইন</h2>
+                <div className="mt-4 space-y-3">
+                  <label className="block text-sm text-slate-300">
+                    ইউজারনেম
+                    <input value={loginForm.username} onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
+                  </label>
+                  <label className="block text-sm text-slate-300">
+                    পাসওয়ার্ড
+                    <input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
+                  </label>
+                </div>
+                <button disabled={isSubmittingLogin} className="mt-4 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60">
+                  {isSubmittingLogin ? 'লগইন হচ্ছে...' : 'লগইন'}
+                </button>
+              </form>
+            ) : (
+              <div className="rounded-2xl border border-emerald-700/40 bg-emerald-950/30 p-4 text-sm text-emerald-300">
+                অ্যাডমিন হিসেবে লগইন করা আছে। আপনি এখন এডিট ও ডিলিট অপারেশন চালাতে পারবেন।
+              </div>
+            )}
+
+            <form onSubmit={handleAdminRequest} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+              <h2 className="text-lg font-semibold">অ্যাডমিন হওয়ার অনুরোধ</h2>
+              <p className="mt-2 text-sm text-slate-400">আপনি চাইলে অনুরোধ জমা করতে পারেন। ডেভেলপার ডাটাবেসে অ্যাডমিন তৈরি করলে আপনার access দেওয়া হবে।</p>
+              <div className="mt-4 space-y-3">
+                <label className="block text-sm text-slate-300">
+                  পুরো নাম
+                  <input value={requestForm.full_name} onChange={(e) => setRequestForm({ ...requestForm, full_name: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
+                </label>
+                <label className="block text-sm text-slate-300">
+                  ইমেইল
+                  <input type="email" value={requestForm.email} onChange={(e) => setRequestForm({ ...requestForm, email: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
+                </label>
+                <label className="block text-sm text-slate-300">
+                  ফোন
+                  <input value={requestForm.phone} onChange={(e) => setRequestForm({ ...requestForm, phone: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
+                </label>
+                <label className="block text-sm text-slate-300">
+                  কারণ
+                  <textarea value={requestForm.reason} onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })} className="mt-2 min-h-24 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
+                </label>
+              </div>
+              <button disabled={isSubmittingRequest} className="mt-4 rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 disabled:opacity-60">
+                {isSubmittingRequest ? 'জমা হচ্ছে...' : 'অনুরোধ পাঠান'}
+              </button>
+            </form>
+          </div>
+
+          {authMessage ? <p className="mt-4 text-sm text-amber-400">{authMessage}</p> : null}
+        </section>
 
         <section className="grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
@@ -180,6 +475,84 @@ export default function Home() {
             <p className="mt-2 text-3xl font-semibold">{filteredParticipants.length}</p>
           </div>
         </section>
+
+        {adminState.isAdmin && adminState.role === 'super_admin' ? (
+          <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-black/10">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-400">সুপার-অ্যাডমিন প্যানেল</p>
+                <h2 className="mt-2 text-xl font-semibold">অ্যাডমিন অনুরোধ ও অ্যাকাউন্ট ব্যবস্থাপনা</h2>
+              </div>
+            </div>
+            {managementMessage ? <p className="mt-4 text-sm text-amber-400">{managementMessage}</p> : null}
+            <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                <h3 className="text-lg font-semibold">অ্যাডমিন অনুরোধ</h3>
+                <div className="mt-4 space-y-3">
+                  {managementData.requests.length === 0 ? (
+                    <p className="text-sm text-slate-400">কোন pending request নেই।</p>
+                  ) : managementData.requests.map((request) => (
+                    <div key={String(request.id)} className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-semibold">{String(request.full_name)}</p>
+                        <span className="rounded-full bg-slate-800 px-2 py-1 text-xs">{String(request.status)}</span>
+                      </div>
+                      <p className="mt-2 text-slate-400">{String(request.email || '—')}</p>
+                      <p className="mt-1 text-slate-400">{String(request.reason || '—')}</p>
+                      <div className="mt-3 flex gap-2">
+                        <button onClick={() => handleRequestDecision(String(request.id), 'approve')} className="rounded-lg bg-emerald-600 px-3 py-1 text-xs">Approve</button>
+                        <button onClick={() => handleRequestDecision(String(request.id), 'reject')} className="rounded-lg bg-rose-700 px-3 py-1 text-xs">Reject</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-4">
+                <form onSubmit={handleCreateAdmin} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                  <h3 className="text-lg font-semibold">নতুন অ্যাডমিন তৈরি করুন</h3>
+                  <div className="mt-4 space-y-3">
+                    <label className="block text-sm text-slate-300">
+                      ইউজারনেম
+                      <input value={newAdminForm.username} onChange={(e) => setNewAdminForm({ ...newAdminForm, username: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
+                    </label>
+                    <label className="block text-sm text-slate-300">
+                      পাসওয়ার্ড
+                      <input type="password" value={newAdminForm.password} onChange={(e) => setNewAdminForm({ ...newAdminForm, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
+                    </label>
+                    <label className="block text-sm text-slate-300">
+                      রোল
+                      <select value={newAdminForm.role} onChange={(e) => setNewAdminForm({ ...newAdminForm, role: e.target.value as 'admin' | 'super_admin' })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2">
+                        <option value="admin">Admin</option>
+                        <option value="super_admin">Super Admin</option>
+                      </select>
+                    </label>
+                  </div>
+                  <button className="mt-4 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950">তৈরি করুন</button>
+                </form>
+
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                  <h3 className="text-lg font-semibold">অ্যাডমিন তালিকা</h3>
+                  <div className="mt-4 space-y-3">
+                    {managementData.admins.length === 0 ? (
+                      <p className="text-sm text-slate-400">কোন অ্যাডমিন নেই।</p>
+                    ) : managementData.admins.map((admin) => (
+                      <div key={String(admin.id)} className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-semibold">{String(admin.username)}</p>
+                          <span className="rounded-full bg-slate-800 px-2 py-1 text-xs">{String(admin.role)}</span>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button onClick={() => handleAdminToggle(String(admin.id), !(admin.is_active === true))} className="rounded-lg bg-slate-800 px-3 py-1 text-xs">{admin.is_active ? 'Deactivate' : 'Activate'}</button>
+                          <button onClick={() => handleAdminDelete(String(admin.id))} className="rounded-lg bg-rose-700 px-3 py-1 text-xs">Delete</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-black/10">
@@ -276,10 +649,14 @@ export default function Home() {
                       <td className="px-3 py-3">{participant.profession || participant.profession_other || '—'}</td>
                       <td className="px-3 py-3">{participant.guest_count}</td>
                       <td className="px-3 py-3">
-                        <div className="flex gap-2">
-                          <button onClick={() => handleEdit(participant)} className="rounded-lg bg-slate-800 px-2 py-1 text-xs">এডিট</button>
-                          <button onClick={() => handleDelete(participant.id)} className="rounded-lg bg-rose-700 px-2 py-1 text-xs">ডিলিট</button>
-                        </div>
+                        {adminState.isAdmin ? (
+                          <div className="flex gap-2">
+                            <button onClick={() => handleEdit(participant)} className="rounded-lg bg-slate-800 px-2 py-1 text-xs">এডিট</button>
+                            <button onClick={() => handleDelete(participant.id)} className="rounded-lg bg-rose-700 px-2 py-1 text-xs">ডিলিট</button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-500">অ্যাডমিন লগইন প্রয়োজন</span>
+                        )}
                       </td>
                     </tr>
                   ))}

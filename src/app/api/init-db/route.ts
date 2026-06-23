@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
+import { hashPassword } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -27,9 +28,20 @@ export async function GET() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'admin',
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
+    `);
+
+    await pool.query(`
+      ALTER TABLE admin_users
+      ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'admin'
+    `);
+
+    await pool.query(`
+      ALTER TABLE admin_users
+      ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE
     `);
 
     await pool.query(`
@@ -43,6 +55,16 @@ export async function GET() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+
+    const superAdminCount = await pool.query('SELECT COUNT(*) FROM admin_users WHERE role = $1', ['super_admin']);
+    if (Number(superAdminCount.rows[0].count) === 0) {
+      const defaultPassword = process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin123!';
+      const hashedPassword = hashPassword(defaultPassword);
+      await pool.query(
+        'INSERT INTO admin_users (username, password_hash, role, is_active) VALUES ($1, $2, $3, TRUE)',
+        ['superadmin', hashedPassword, 'super_admin']
+      );
+    }
 
     return NextResponse.json({ ok: true, message: 'Database ready' });
   } catch (error) {
