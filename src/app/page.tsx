@@ -757,22 +757,24 @@ export default function Home() {
               <p className="mt-3 text-2xl font-semibold">{filteredParticipants.length}</p>
               <p className="text-xs text-slate-400">ফলাফল পাওয়া গেছে</p>
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <p className="text-xs text-slate-400">দ্রুত অ্যাকশন (অ্যাডমিন)</p>
-              <div className="mt-2 space-y-1.5 text-xs text-slate-400">
-                {filteredParticipants.slice(0, 5).map((p) => (
-                  <div key={p.id} className="flex items-center justify-between">
-                    <span className="truncate">{p.name}</span>
-                    {adminState.isAdmin ? (
-                      <button onClick={() => handleEdit(p)} className="shrink-0 text-amber-400 hover:text-amber-300">এডিট</button>
-                    ) : null}
-                  </div>
-                ))}
-                {filteredParticipants.length > 5 ? (
-                  <p className="pt-1 text-slate-600">আরও {filteredParticipants.length - 5} জন...</p>
-                ) : null}
+            {adminState.isAdmin ? (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-4 ring-1 ring-amber-500/10">
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">দ্রুত অ্যাকশন (অ্যাডমিন)</p>
+                <div className="mt-3 space-y-1.5 text-xs text-slate-300">
+                  {filteredParticipants.slice(0, 5).map((p) => (
+                    <div key={p.id} className="flex items-center justify-between rounded-lg bg-slate-900/60 px-2 py-1">
+                      <span className="truncate">{p.name}</span>
+                      <button onClick={() => handleEdit(p)} className="shrink-0 rounded bg-amber-500/20 px-2 py-0.5 text-amber-300 hover:bg-amber-500/40">এডিট</button>
+                    </div>
+                  ))}
+                  {filteredParticipants.length === 0 ? (
+                    <p className="text-slate-600">কোন ফলাফল নেই</p>
+                  ) : filteredParticipants.length > 5 ? (
+                    <p className="pt-1 text-slate-600">আরও {filteredParticipants.length - 5} জন...</p>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
         </section>
       </div>
