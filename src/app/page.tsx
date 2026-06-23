@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 
 type Participant = {
   id: string;
@@ -676,8 +677,8 @@ export default function Home() {
           </section>
         ) : null}
 
-        <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-black/10">
+        <section className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          <form onSubmit={handleSubmit} className="flex-1 rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-black/10">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">{editingId ? 'তথ্য আপডেট করুন' : 'নতুন রেজিস্ট্রেশন'}</h2>
               <button type="button" onClick={() => { setForm(initialForm); setEditingId(null); }} className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-rose-700 hover:bg-rose-950/30 hover:text-rose-300">রিসেট</button>
@@ -744,48 +745,35 @@ export default function Home() {
             {message ? <p className="mt-4 text-sm text-emerald-400">{message}</p> : null}
           </form>
 
-          <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-black/10">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">অংশগ্রহণকারীদের তালিকা</h2>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="নাম, ব্যাচ, পেশা, জেলা" className="w-56 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm" />
+          <div className="flex shrink-0 flex-col gap-3 lg:w-72">
+            <Link href="/participants" className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-400">
+              অংশগ্রহণকারীদের তালিকা দেখুন &rarr;
+            </Link>
+            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <p className="text-xs text-slate-400">সার্চ ফলাফল</p>
+              <div className="mt-2">
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="নাম, ব্যাচ, পেশা, জেলা" className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm" />
+              </div>
+              <p className="mt-3 text-2xl font-semibold">{filteredParticipants.length}</p>
+              <p className="text-xs text-slate-400">ফলাফল পাওয়া গেছে</p>
             </div>
-            <div className="mt-4 max-h-[720px] overflow-auto rounded-2xl border border-slate-800">
-              <table className="min-w-full divide-y divide-slate-800 text-sm">
-                <thead className="bg-slate-950/90 text-left text-slate-300">
-                  <tr>
-                    <th className="px-3 py-3">নাম</th>
-                    <th className="px-3 py-3">ব্যাচ</th>
-                    <th className="px-3 py-3">পেশা</th>
-                    <th className="px-3 py-3">অতিথি</th>
-                    <th className="px-3 py-3">অ্যাকশন</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800 bg-slate-900/60">
-                  {filteredParticipants.map((participant) => (
-                    <tr key={participant.id} className="align-top">
-                      <td className="px-3 py-3">
-                        <div className="font-semibold">{participant.name}</div>
-                        <div className="text-xs text-slate-400">{participant.contact_phone || '—'}</div>
-                      </td>
-                      <td className="px-3 py-3">{participant.batch}</td>
-                      <td className="px-3 py-3">{participant.profession || participant.profession_other || '—'}</td>
-                      <td className="px-3 py-3">{participant.guest_count}</td>
-                      <td className="px-3 py-3">
-                        {adminState.isAdmin ? (
-                          <div className="flex gap-2">
-                            <button onClick={() => handleEdit(participant)} className="rounded-lg bg-slate-800 px-2 py-1 text-xs">এডিট</button>
-                            <button onClick={() => handleDelete(participant.id)} className="rounded-lg bg-rose-700 px-2 py-1 text-xs">ডিলিট</button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-500">অ্যাডমিন লগইন প্রয়োজন</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <p className="text-xs text-slate-400">দ্রুত অ্যাকশন (অ্যাডমিন)</p>
+              <div className="mt-2 space-y-1.5 text-xs text-slate-400">
+                {filteredParticipants.slice(0, 5).map((p) => (
+                  <div key={p.id} className="flex items-center justify-between">
+                    <span className="truncate">{p.name}</span>
+                    {adminState.isAdmin ? (
+                      <button onClick={() => handleEdit(p)} className="shrink-0 text-amber-400 hover:text-amber-300">এডিট</button>
+                    ) : null}
+                  </div>
+                ))}
+                {filteredParticipants.length > 5 ? (
+                  <p className="pt-1 text-slate-600">আরও {filteredParticipants.length - 5} জন...</p>
+                ) : null}
+              </div>
             </div>
-          </section>
+          </div>
         </section>
       </div>
     </main>
