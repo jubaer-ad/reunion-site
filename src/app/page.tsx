@@ -105,6 +105,7 @@ export default function Home() {
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [isSubmittingLogout, setIsSubmittingLogout] = useState(false);
+  const [showAuthPanel, setShowAuthPanel] = useState<'login' | 'request' | null>(null);
   const [managementData, setManagementData] = useState<{ requests: Array<Record<string, unknown>>; admins: Array<Record<string, unknown>> }>({ requests: [], admins: [] });
   const [managementMessage, setManagementMessage] = useState('');
   const [newAdminForm, setNewAdminForm] = useState({ username: '', password: '', role: 'admin' as 'admin' | 'super_admin' });
@@ -261,6 +262,7 @@ export default function Home() {
       setAuthMessage('লগইন সফল হয়েছে।');
       setLoginForm(initialLoginForm);
       await loadAdminStatus();
+      setTimeout(() => setShowAuthPanel(null), 800);
     } catch (error) {
       setAuthMessage(error instanceof Error ? error.message : 'লগইন হয়নি।');
     } finally {
@@ -287,6 +289,7 @@ export default function Home() {
 
       setAuthMessage('অ্যাডমিন অনুরোধ জমা হয়েছে। আপনি প্রয়োজন হলে ডাটাবেসে অ্যাডমিন তৈরি করবেন।');
       setRequestForm(initialAdminRequestForm);
+      setTimeout(() => setShowAuthPanel(null), 1200);
     } catch (error) {
       setAuthMessage(error instanceof Error ? error.message : 'অনুরোধ জমা হয়নি।');
     } finally {
@@ -394,81 +397,105 @@ export default function Home() {
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl shadow-black/20">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">High School Reunion</p>
-          <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">পুনর্মিলনী রেজিস্ট্রেশন ও তথ্য ব্যবস্থাপনা</h1>
-          <p className="mt-4 max-w-3xl text-sm text-slate-300 sm:text-base">
-            এই পৃষ্ঠায় অংশগ্রহণকারীরা নিজেদের তথ্য রেজিস্ট্রেশন করতে পারবেন, এবং reunion committee সহজে তালিকা অনুসন্ধান, আপডেট ও এক্সেল ডাউনলোড করতে পারবেন।
-          </p>
-        </header>
-
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-black/10">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-400">অ্যাডমিন toegang</p>
-              <p className="mt-2 text-sm text-slate-300">
-                {adminState.isAdmin ? `লগইন করা আছে — ${adminState.username}` : 'এডিট ও ডিলিট করতে অ্যাডমিন লগইন প্রয়োজন।'}
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">High School Reunion</p>
+              <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">পুনর্মিলনী রেজিস্ট্রেশন ও তথ্য ব্যবস্থাপনা</h1>
+              <p className="mt-4 max-w-3xl text-sm text-slate-300 sm:text-base">
+                এই পৃষ্ঠায় অংশগ্রহণকারীরা নিজেদের তথ্য রেজিস্ট্রেশন করতে পারবেন, এবং reunion committee সহজে তালিকা অনুসন্ধান, আপডেট ও এক্সেল ডাউনলোড করতে পারবেন।
               </p>
             </div>
-            {adminState.isAdmin ? (
-              <button onClick={handleLogout} disabled={isSubmittingLogout} className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 disabled:opacity-60">
+            <div className="flex shrink-0 gap-2">
+              <button onClick={() => setShowAuthPanel('login')} className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400">
+                অ্যাডমিন লগইন
+              </button>
+              <button onClick={() => setShowAuthPanel('request')} className="rounded-xl border border-amber-500/40 px-4 py-2 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/10">
+                অ্যাডমিন হওয়ার অনুরোধ
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {adminState.isAdmin ? (
+          <section className="rounded-3xl border border-emerald-700/40 bg-emerald-950/20 p-4 shadow-xl shadow-black/10">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-400">অ্যাডমিন</p>
+                <p className="mt-1 text-sm text-emerald-300">লগইন করা আছে — {adminState.username} ({adminState.role === 'super_admin' ? 'Super Admin' : 'Admin'})</p>
+              </div>
+              <button onClick={handleLogout} disabled={isSubmittingLogout} className="rounded-xl border border-rose-700/50 px-4 py-2 text-sm text-rose-300 transition hover:bg-rose-950/30 disabled:opacity-60">
                 {isSubmittingLogout ? 'লগআউট হচ্ছে...' : 'লগআউট'}
               </button>
-            ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {showAuthPanel ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => { setShowAuthPanel(null); setAuthMessage(''); }}>
+            <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl shadow-black/50" onClick={(e) => e.stopPropagation()}>
+              {showAuthPanel === 'login' ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold">অ্যাডমিন লগইন</h2>
+                    <button onClick={() => { setShowAuthPanel(null); setAuthMessage(''); }} className="rounded-xl border border-slate-700 px-3 py-1 text-sm text-slate-400 hover:text-slate-200">
+                      ✕
+                    </button>
+                  </div>
+                  <form onSubmit={handleLogin} className="mt-6">
+                    <div className="space-y-4">
+                      <label className="block text-sm text-slate-300">
+                        ইউজারনেম
+                        <input value={loginForm.username} onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                      </label>
+                      <label className="block text-sm text-slate-300">
+                        পাসওয়ার্ড
+                        <input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                      </label>
+                    </div>
+                    {authMessage ? <p className="mt-4 text-sm text-amber-400">{authMessage}</p> : null}
+                    <button type="submit" disabled={isSubmittingLogin} className="mt-6 w-full rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
+                      {isSubmittingLogin ? 'লগইন হচ্ছে...' : 'লগইন'}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold">অ্যাডমিন হওয়ার অনুরোধ</h2>
+                    <button onClick={() => { setShowAuthPanel(null); setAuthMessage(''); }} className="rounded-xl border border-slate-700 px-3 py-1 text-sm text-slate-400 hover:text-slate-200">
+                      ✕
+                    </button>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-400">আপনি চাইলে অনুরোধ জমা করতে পারেন। ডেভেলপার ডাটাবেসে অ্যাডমিন তৈরি করলে আপনার access দেওয়া হবে।</p>
+                  <form onSubmit={handleAdminRequest} className="mt-4">
+                    <div className="space-y-3">
+                      <label className="block text-sm text-slate-300">
+                        পুরো নাম
+                        <input value={requestForm.full_name} onChange={(e) => setRequestForm({ ...requestForm, full_name: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                      </label>
+                      <label className="block text-sm text-slate-300">
+                        ইমেইল
+                        <input type="email" value={requestForm.email} onChange={(e) => setRequestForm({ ...requestForm, email: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                      </label>
+                      <label className="block text-sm text-slate-300">
+                        ফোন
+                        <input value={requestForm.phone} onChange={(e) => setRequestForm({ ...requestForm, phone: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                      </label>
+                      <label className="block text-sm text-slate-300">
+                        কারণ
+                        <textarea value={requestForm.reason} onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })} className="mt-2 min-h-24 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                      </label>
+                    </div>
+                    {authMessage ? <p className="mt-4 text-sm text-amber-400">{authMessage}</p> : null}
+                    <button type="submit" disabled={isSubmittingRequest} className="mt-6 w-full rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800 disabled:opacity-60">
+                      {isSubmittingRequest ? 'জমা হচ্ছে...' : 'অনুরোধ পাঠান'}
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
           </div>
-
-          <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
-            {!adminState.isAdmin ? (
-              <form onSubmit={handleLogin} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                <h2 className="text-lg font-semibold">অ্যাডমিন লগইন</h2>
-                <div className="mt-4 space-y-3">
-                  <label className="block text-sm text-slate-300">
-                    ইউজারনেম
-                    <input value={loginForm.username} onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
-                  </label>
-                  <label className="block text-sm text-slate-300">
-                    পাসওয়ার্ড
-                    <input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
-                  </label>
-                </div>
-                <button disabled={isSubmittingLogin} className="mt-4 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60">
-                  {isSubmittingLogin ? 'লগইন হচ্ছে...' : 'লগইন'}
-                </button>
-              </form>
-            ) : (
-              <div className="rounded-2xl border border-emerald-700/40 bg-emerald-950/30 p-4 text-sm text-emerald-300">
-                অ্যাডমিন হিসেবে লগইন করা আছে। আপনি এখন এডিট ও ডিলিট অপারেশন চালাতে পারবেন।
-              </div>
-            )}
-
-            <form onSubmit={handleAdminRequest} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-              <h2 className="text-lg font-semibold">অ্যাডমিন হওয়ার অনুরোধ</h2>
-              <p className="mt-2 text-sm text-slate-400">আপনি চাইলে অনুরোধ জমা করতে পারেন। ডেভেলপার ডাটাবেসে অ্যাডমিন তৈরি করলে আপনার access দেওয়া হবে।</p>
-              <div className="mt-4 space-y-3">
-                <label className="block text-sm text-slate-300">
-                  পুরো নাম
-                  <input value={requestForm.full_name} onChange={(e) => setRequestForm({ ...requestForm, full_name: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
-                </label>
-                <label className="block text-sm text-slate-300">
-                  ইমেইল
-                  <input type="email" value={requestForm.email} onChange={(e) => setRequestForm({ ...requestForm, email: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
-                </label>
-                <label className="block text-sm text-slate-300">
-                  ফোন
-                  <input value={requestForm.phone} onChange={(e) => setRequestForm({ ...requestForm, phone: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
-                </label>
-                <label className="block text-sm text-slate-300">
-                  কারণ
-                  <textarea value={requestForm.reason} onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })} className="mt-2 min-h-24 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2" />
-                </label>
-              </div>
-              <button disabled={isSubmittingRequest} className="mt-4 rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 disabled:opacity-60">
-                {isSubmittingRequest ? 'জমা হচ্ছে...' : 'অনুরোধ পাঠান'}
-              </button>
-            </form>
-          </div>
-
-          {authMessage ? <p className="mt-4 text-sm text-amber-400">{authMessage}</p> : null}
-        </section>
+        ) : null}
 
         <section className="grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
