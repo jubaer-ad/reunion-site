@@ -7,7 +7,7 @@ function setAuthCookie(response: NextResponse, username: string) {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
   response.headers.set(
     'Set-Cookie',
-    `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Path=/; Max-Age=28800; SameSite=Lax${secure}`
+    `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; Max-Age=28800; SameSite=Lax${secure}`
   );
 }
 
