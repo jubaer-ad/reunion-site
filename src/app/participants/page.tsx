@@ -20,7 +20,7 @@ type Participant = {
   created_at: string;
 };
 
-type SortField = 'name' | 'batch' | 'profession' | 'guest_count' | 'district';
+type SortField = 'name' | 'batch' | 'profession' | 'guest_count' | 'district' | 'created_at';
 
 type AdminState = {
   isAdmin: boolean;
@@ -163,6 +163,10 @@ export default function ParticipantsPage() {
         case 'district':
           aVal = (a.district || '').toLowerCase();
           bVal = (b.district || '').toLowerCase();
+          break;
+        case 'created_at':
+          aVal = a.created_at;
+          bVal = b.created_at;
           break;
         default:
           return 0;
@@ -339,8 +343,8 @@ export default function ParticipantsPage() {
                 <input value={editForm.guest_details} onChange={(e) => setEditForm({ ...editForm, guest_details: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
               </label>
               <label className="text-sm text-slate-300">
-                ফোন নম্বর<sup className="text-amber-400">*</sup>
-                <input required value={editForm.contact_phone} onChange={(e) => setEditForm({ ...editForm, contact_phone: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
+                ফোন নম্বর
+                <input value={editForm.contact_phone} onChange={(e) => setEditForm({ ...editForm, contact_phone: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
               </label>
               <label className="text-sm text-slate-300">
                 ইমেইল
@@ -406,6 +410,12 @@ export default function ParticipantsPage() {
                   >
                     জেলা<SortIcon field="district" currentField={sortField} dir={sortDir} />
                   </th>
+                  <th
+                    className="cursor-pointer select-none px-4 py-3 hover:text-white transition"
+                    onClick={() => handleSort('created_at')}
+                  >
+                    রেজিস্ট্রেশন তারিখ<SortIcon field="created_at" currentField={sortField} dir={sortDir} />
+                  </th>
                   <th className="px-4 py-3">ফোন</th>
                   <th className="px-4 py-3">অ্যাকশন</th>
                 </tr>
@@ -413,7 +423,7 @@ export default function ParticipantsPage() {
               <tbody className="divide-y divide-slate-800 bg-slate-900/60">
                 {sortedParticipants.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
+                    <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
                       কোন অংশগ্রহণকারী পাওয়া যায়নি।
                     </td>
                   </tr>
@@ -425,6 +435,9 @@ export default function ParticipantsPage() {
                       <td className="px-4 py-3">{participant.profession || participant.profession_other || '—'}</td>
                       <td className="px-4 py-3 font-mono tabular-nums">{participant.guest_count}</td>
                       <td className="px-4 py-3">{participant.district || '—'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-400 tabular-nums">
+                        {new Date(participant.created_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </td>
                       <td className="px-4 py-3 text-xs text-slate-400">{participant.contact_phone || '—'}</td>
                       <td className="px-4 py-3">
                         {adminState.isAdmin ? (
