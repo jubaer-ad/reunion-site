@@ -114,6 +114,7 @@ export default function Home() {
   const [setPasswordForm, setSetPasswordForm] = useState({ password: '', confirm: '' });
   const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState('');
+  const [approvedCredential, setApprovedCredential] = useState<{ username: string; tempPassword: string } | null>(null);
 
   const loadParticipants = async () => {
     try {
@@ -344,6 +345,7 @@ export default function Home() {
       requests: prev.requests.filter(r => String(r.id) !== requestId),
     }));
     setManagementMessage('');
+    setApprovedCredential(null);
 
     try {
       const res = await fetch(`/api/admin/requests/${requestId}`, {
@@ -353,7 +355,12 @@ export default function Home() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'অপারেশন ব্যর্থ হয়েছে।');
-      setManagementMessage('অনুরোধ আপডেট করা হয়েছে।');
+      if (action === 'approve' && data.temp_password && data.username) {
+        setApprovedCredential({ username: data.username, tempPassword: data.temp_password });
+        setManagementMessage('অনুরোধ অনুমোদিত হয়েছে। নিচের ক্রেডেনশিয়াল কপি করুন:');
+      } else {
+        setManagementMessage('অনুরোধ আপডেট করা হয়েছে।');
+      }
       loadManagementData();
     } catch (error) {
       loadManagementData();
@@ -547,10 +554,9 @@ export default function Home() {
                       </label>
                       <label className="block text-sm text-slate-300">
                         পাসওয়ার্ড
-                        <input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" placeholder="নতুন অনুমোদিত অ্যাডমিন হলে খালি রাখুন" />
+                        <input type="password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2" />
                       </label>
                     </div>
-                    <p className="mt-3 text-xs text-amber-400/70">নতুন অনুমোদিত অ্যাডমিন বা পাসওয়ার্ড রিসেট করা অ্যাকাউন্ট: পাসওয়ার্ড খালি রেখে শুধু ইউজারনেম দিয়ে লগইন করুন। পরবর্তী পৃষ্ঠায় আপনি নিজের পাসওয়ার্ড সেট করতে পারবেন।</p>
                     {authMessage ? <p className="mt-4 text-sm text-amber-400">{authMessage}</p> : null}
                     <button type="submit" disabled={isSubmittingLogin} className="mt-6 w-full rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
                       {isSubmittingLogin ? 'লগইন হচ্ছে...' : 'লগইন'}
@@ -620,6 +626,32 @@ export default function Home() {
               </div>
             </div>
             {managementMessage ? <p className="mt-4 text-sm text-amber-400">{managementMessage}</p> : null}
+            {approvedCredential ? (
+              <div className="mt-3 rounded-xl border border-emerald-700/50 bg-emerald-950/30 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-400">নতুন অ্যাডমিন ক্রেডেনশিয়াল</p>
+                <div className="mt-3 space-y-2">
+                  <label className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 w-20">Username:</span>
+                    <code className="flex-1 rounded-lg bg-slate-950 px-3 py-1.5 text-sm font-mono text-emerald-300 select-all">{approvedCredential.username}</code>
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-lg bg-emerald-700 px-2 py-1 text-xs hover:bg-emerald-600"
+                      onClick={() => { navigator.clipboard.writeText(approvedCredential.username); }}
+                    >Copy</button>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 w-20">Password:</span>
+                    <code className="flex-1 rounded-lg bg-slate-950 px-3 py-1.5 text-sm font-mono text-amber-300 select-all">{approvedCredential.tempPassword}</code>
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-lg bg-amber-600 px-2 py-1 text-xs hover:bg-amber-500"
+                      onClick={() => { navigator.clipboard.writeText(approvedCredential.tempPassword); }}
+                    >Copy</button>
+                  </label>
+                </div>
+                <p className="mt-2 text-xs text-amber-400/70">এই টেম্পোরারি পাসওয়ার্ড ২৪ ঘন্টার মধ্যে ব্যবহার করে লগইন করে নতুন পাসওয়ার্ড সেট করতে হবে।</p>
+              </div>
+            ) : null}
             <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
               <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
                 <h3 className="text-lg font-semibold">অ্যাডমিন অনুরোধ</h3>

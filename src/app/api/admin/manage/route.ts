@@ -69,7 +69,7 @@ export async function POST(request: Request) {
 
       const placeholderHash = hashPassword(Math.random().toString(36));
       await getDb().query(
-        'UPDATE admin_users SET password_reset_required = TRUE, password_hash = $1 WHERE id = $2',
+        'UPDATE admin_users SET password_reset_required = TRUE, password_hash = $1, temp_password_expires_at = NULL WHERE id = $2',
         [placeholderHash, targetId]
       );
       return NextResponse.json({ ok: true, message: 'Password reset. Admin must set a new password on next login.' });

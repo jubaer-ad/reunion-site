@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getCurrentAdmin, hashPassword } from '@/lib/auth';
+import { getCurrentAdmin, hashPassword, generateTempPassword } from '@/lib/auth';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -22,17 +22,31 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
       const username = requestData.email || requestData.full_name.replace(/\s+/g, '').toLowerCase();
       const roleValue = role === 'super_admin' ? 'super_admin' : 'admin';
-      const placeholderHash = hashPassword(Math.random().toString(36));
+
+      const tempPassword = generateTempPassword();
+      const tempHash = hashPassword(tempPassword);
 
       await getDb().query(
-        `INSERT INTO admin_users (username, password_hash, role, is_active, password_reset_required)
-         VALUES ($1, $2, $3, TRUE, TRUE)
-         ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, is_active = TRUE, password_reset_required = TRUE`,
-        [username, placeholderHash, roleValue]
+        `INSERT INTO admin_users (username, password_hash, role, is_active, password_reset_required, temp_password_expires_at, email)
+         VALUES ($1, $2, $3, TRUE, TRUE, NOW() + INTERVAL '24 hours', $4)
+         ON CONFLICT (username) DO UPDATE SET
+           password_hash = EXCLUDED.password_hash,
+           role = EXCLUDED.role,
+           is_active = TRUE,
+           password_reset_required = TRUE,
+           temp_password_expires_at = NOW() + INTERVAL '24 hours',
+           email = EXCLUDED.email`,
+        [username, tempHash, roleValue, requestData.email || null]
       );
 
       await getDb().query('UPDATE admin_requests SET status = $1 WHERE id = $2', ['approved', id]);
-      return NextResponse.json({ ok: true, username, message: 'Admin approved. They must set a password on first login.' });
+
+      return NextResponse.json({
+        ok: true,
+        username,
+        temp_password: tempPassword,
+        message: 'Admin approved. Temporary password generated.',
+      });
     }
 
     if (action === 'reject') {

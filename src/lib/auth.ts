@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/db';
 
 export const SESSION_COOKIE = 'reunion_admin_session';
+const TEMP_PASSWORD_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%^&*';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-me';
 
 export type AdminSession = {
@@ -51,6 +52,15 @@ export async function getCurrentAdmin(request?: NextRequest) {
   const result = await getDb().query('SELECT username, role, password_reset_required FROM admin_users WHERE username = $1 AND is_active = TRUE', [session.username]);
   const row = result.rows[0];
   return row ? { username: session.username, role: row.role, passwordResetRequired: Boolean(row.password_reset_required) } : null;
+}
+
+export function generateTempPassword(length = 16) {
+  const bytes = randomBytes(length);
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += TEMP_PASSWORD_CHARS.charAt(bytes[i] % TEMP_PASSWORD_CHARS.length);
+  }
+  return result;
 }
 
 export function hashPassword(password: string) {

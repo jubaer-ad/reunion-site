@@ -185,6 +185,10 @@ export default function ParticipantsPage() {
       setMessage('এডিট করতে অ্যাডমিন লগইন করুন।');
       return;
     }
+    if (adminState.passwordResetRequired) {
+      setMessage('প্রথমে পাসওয়ার্ড সেট করুন (হোম পেজে যান)।');
+      return;
+    }
     setEditingId(participant.id);
     setEditForm({
       name: participant.name,
@@ -205,6 +209,10 @@ export default function ParticipantsPage() {
   const handleDelete = async (id: string) => {
     if (!adminState.isAdmin) {
       setMessage('ডিলিট করতে অ্যাডমিন লগইন করুন।');
+      return;
+    }
+    if (adminState.passwordResetRequired) {
+      setMessage('প্রথমে পাসওয়ার্ড সেট করুন (হোম পেজে যান)।');
       return;
     }
     const confirmed = window.confirm('আপনি কি নিশ্চিতভাবে মুছতে চান?');

@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
     const hashed = hashPassword(newPassword);
     await getDb().query(
-      'UPDATE admin_users SET password_hash = $1, password_reset_required = FALSE WHERE username = $2',
+      'UPDATE admin_users SET password_hash = $1, password_reset_required = FALSE, temp_password_expires_at = NULL WHERE username = $2',
       [hashed, admin.username]
     );
 
