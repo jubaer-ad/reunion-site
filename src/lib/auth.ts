@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/db';
 
-const SESSION_COOKIE = 'reunion_admin_session';
+export const SESSION_COOKIE = 'reunion_admin_session';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-me';
 
 export type AdminSession = {

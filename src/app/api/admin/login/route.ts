@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { setSessionCookie, verifyPassword } from '@/lib/auth';
+import { signSession, SESSION_COOKIE, verifyPassword } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
@@ -19,8 +19,16 @@ export async function POST(request: Request) {
     const needsReset = Boolean(admin.password_reset_required);
 
     if (needsReset && !password) {
-      await setSessionCookie(admin.username);
-      return NextResponse.json({ ok: true, username: admin.username, role: admin.role, password_reset_required: true });
+      const token = signSession({ username: admin.username, issuedAt: Date.now() });
+      const response = NextResponse.json({ ok: true, username: admin.username, role: admin.role, password_reset_required: true });
+      response.cookies.set(SESSION_COOKIE, token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 60 * 60 * 8,
+      });
+      return response;
     }
 
     if (needsReset && password) {
@@ -31,8 +39,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    await setSessionCookie(admin.username);
-    return NextResponse.json({ ok: true, username: admin.username, role: admin.role });
+    const token = signSession({ username: admin.username, issuedAt: Date.now() });
+    const response = NextResponse.json({ ok: true, username: admin.username, role: admin.role });
+    response.cookies.set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 8,
+    });
+    return response;
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });
