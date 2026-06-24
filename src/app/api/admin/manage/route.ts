@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getCurrentAdmin, hashPassword } from '@/lib/auth';
+import { getCurrentAdmin, hashPassword, generateTempPassword } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -67,12 +67,23 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Target admin is required' }, { status: 400 });
       }
 
-      const placeholderHash = hashPassword(Math.random().toString(36));
+      const adminRes = await getDb().query('SELECT username FROM admin_users WHERE id = $1', [targetId]);
+      if (!adminRes.rows[0]) {
+        return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
+      }
+
+      const tempPassword = generateTempPassword();
+      const tempHash = hashPassword(tempPassword);
       await getDb().query(
-        'UPDATE admin_users SET password_reset_required = TRUE, password_hash = $1, temp_password_expires_at = NULL WHERE id = $2',
-        [placeholderHash, targetId]
+        'UPDATE admin_users SET password_hash = $1, password_reset_required = TRUE, temp_password_expires_at = NOW() + INTERVAL \'24 hours\' WHERE id = $2',
+        [tempHash, targetId]
       );
-      return NextResponse.json({ ok: true, message: 'Password reset. Admin must set a new password on next login.' });
+      return NextResponse.json({
+        ok: true,
+        username: adminRes.rows[0].username,
+        temp_password: tempPassword,
+        message: 'Password reset. Temporary password generated.',
+      });
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

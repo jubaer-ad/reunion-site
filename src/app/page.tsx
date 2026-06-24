@@ -421,6 +421,8 @@ export default function Home() {
 
   const handleResetPassword = async (id: string) => {
     if (!window.confirm('এই অ্যাডমিনের পাসওয়ার্ড রিসেট করতে চান? পরবর্তী লগইনে তাকে নতুন পাসওয়ার্ড সেট করতে হবে।')) return;
+    setManagementMessage('');
+    setApprovedCredential(null);
     try {
       const res = await fetch('/api/admin/manage', {
         method: 'POST',
@@ -429,7 +431,12 @@ export default function Home() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'পাসওয়ার্ড রিসেট করা যায়নি।');
-      setManagementMessage('পাসওয়ার্ড রিসেট করা হয়েছে।');
+      if (data.temp_password && data.username) {
+        setApprovedCredential({ username: data.username, tempPassword: data.temp_password });
+        setManagementMessage('পাসওয়ার্ড রিসেট করা হয়েছে। নিচের নতুন ক্রেডেনশিয়াল কপি করুন:');
+      } else {
+        setManagementMessage('পাসওয়ার্ড রিসেট করা হয়েছে।');
+      }
       await loadManagementData();
     } catch (error) {
       setManagementMessage(error instanceof Error ? error.message : 'পাসওয়ার্ড রিসেট করা যায়নি।');
