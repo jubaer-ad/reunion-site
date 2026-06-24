@@ -484,14 +484,16 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="flex shrink-0 gap-2">
-              <button onClick={() => setShowAuthPanel('login')} className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400">
-                অ্যাডমিন লগইন
-              </button>
-              <button onClick={() => setShowAuthPanel('request')} className="rounded-xl border border-amber-500/40 px-4 py-2 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/10">
-                অ্যাডমিন হওয়ার অনুরোধ
-              </button>
-            </div>
+            {!adminState.isAdmin ? (
+              <div className="flex shrink-0 gap-2">
+                <button onClick={() => setShowAuthPanel('login')} className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400">
+                  অ্যাডমিন লগইন
+                </button>
+                <button onClick={() => setShowAuthPanel('request')} className="rounded-xl border border-amber-500/40 px-4 py-2 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/10">
+                  অ্যাডমিন হওয়ার অনুরোধ
+                </button>
+              </div>
+            ) : null}
           </div>
         </header>
 
