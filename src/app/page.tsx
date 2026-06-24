@@ -478,25 +478,25 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl shadow-black/20">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-6">
-              <img src="/kalaia_high_reunion_2026.png" alt="কালাইয়া মাধ্যমিক বিদ্যালয় পুনর্মিলনী ২০২৬" className="h-24 w-24 shrink-0 self-center rounded-2xl border border-slate-700 object-cover" />
+        <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-black/20 sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-4 sm:gap-6">
+              <img src="/kalaia_high_reunion_2026.png" alt="কালাইয়া মাধ্যমিক বিদ্যালয় পুনর্মিলনী ২০২৬" className="h-16 w-16 shrink-0 self-center rounded-2xl border border-slate-700 object-cover sm:h-24 sm:w-24" />
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-400">কালাইয়া মাধ্যমিক বিদ্যালয়</p>
-                <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">প্রাক্তন শিক্ষার্থী পুনর্মিলনী অনুষ্ঠান-২০২৬</h1>
-                <p className="mt-3 text-lg font-medium italic text-amber-300/80">একসাথে স্মৃতি, একসাথে ভবিষ্যৎ</p>
-                <p className="mt-4 max-w-3xl text-sm text-slate-300 sm:text-base">
+                <h1 className="mt-2 text-2xl font-semibold sm:mt-3 sm:text-4xl">প্রাক্তন শিক্ষার্থী পুনর্মিলনী অনুষ্ঠান-২০২৬</h1>
+                <p className="mt-2 text-base font-medium italic text-amber-300/80 sm:mt-3 sm:text-lg">একসাথে স্মৃতি, একসাথে ভবিষ্যৎ</p>
+                <p className="mt-3 max-w-3xl text-sm text-slate-300 sm:mt-4 sm:text-base">
                   এই পৃষ্ঠায় অংশগ্রহণকারীরা নিজেদের তথ্য রেজিস্ট্রেশন করতে পারবেন, এবং রিইউনিয়ন কমিটি সহজে তালিকা অনুসন্ধান, আপডেট ও এক্সেল ডাউনলোড করতে পারবেন।
                 </p>
               </div>
             </div>
             {!adminState.isAdmin ? (
-              <div className="flex shrink-0 gap-2">
-                <button onClick={() => setShowAuthPanel('login')} className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400">
+              <div className="flex w-full gap-2 sm:w-auto">
+                <button onClick={() => setShowAuthPanel('login')} className="flex-1 rounded-xl bg-amber-500 px-3 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 sm:flex-none sm:px-4">
                   অ্যাডমিন লগইন
                 </button>
-                <button onClick={() => setShowAuthPanel('request')} className="rounded-xl border border-amber-500/40 px-4 py-2 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/10">
+                <button onClick={() => setShowAuthPanel('request')} className="flex-1 rounded-xl border border-amber-500/40 px-3 py-2.5 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/10 sm:flex-none sm:px-4">
                   অ্যাডমিন হওয়ার অনুরোধ
                 </button>
               </div>
@@ -546,7 +546,7 @@ export default function Home() {
 
         {showAuthPanel ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => { setShowAuthPanel(null); setAuthMessage(''); }}>
-            <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl shadow-black/50" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/50 sm:p-6" onClick={(e) => e.stopPropagation()}>
               {showAuthPanel === 'login' ? (
                 <>
                   <div className="flex items-center justify-between">

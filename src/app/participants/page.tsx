@@ -265,17 +265,17 @@ export default function ParticipantsPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:text-slate-100">
+        <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-4 sm:p-5">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Link href="/" className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:text-slate-100 sm:px-4">
               &larr; হোম
             </Link>
             <div>
-              <h1 className="text-xl font-semibold sm:text-2xl">অংশগ্রহণকারীদের তালিকা</h1>
-              <p className="text-sm text-slate-400">সকল নিবন্ধিত প্রাক্তন শিক্ষার্থী</p>
+              <h1 className="text-lg font-semibold sm:text-2xl">অংশগ্রহণকারীদের তালিকা</h1>
+              <p className="text-xs text-slate-400 sm:text-sm">সকল নিবন্ধিত প্রাক্তন শিক্ষার্থী</p>
             </div>
           </div>
-          <button onClick={exportExcel} className="rounded-xl border border-emerald-700/50 px-4 py-2 text-sm text-emerald-300 transition hover:bg-emerald-950/30">
+          <button onClick={exportExcel} className="rounded-xl border border-emerald-700/50 px-3 py-2 text-xs text-emerald-300 transition hover:bg-emerald-950/30 sm:px-4 sm:text-sm">
             এক্সেল ডাউনলোড
           </button>
         </header>
@@ -297,7 +297,7 @@ export default function ParticipantsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="নাম, ব্যাচ, পেশা, জেলা"
-                className="ml-auto w-48 rounded-xl border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm"
+                className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm sm:ml-auto sm:w-48 sm:flex-none"
               />
             </div>
           </div>
@@ -375,9 +375,9 @@ export default function ParticipantsPage() {
           <p className="rounded-xl border border-emerald-700/40 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-400">{message}</p>
         ) : null}
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden">
+        <section className="rounded-2xl border border-slate-800 bg-slate-900/70">
           <div className="max-h-[calc(100vh-320px)] overflow-auto">
-            <table className="min-w-full divide-y divide-slate-800 text-sm">
+            <table className="min-w-[640px] divide-y divide-slate-800 text-sm lg:min-w-full">
               <thead className="sticky top-0 z-10 bg-slate-950/95 text-left text-slate-300">
                 <tr>
                   <th
