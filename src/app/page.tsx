@@ -267,8 +267,14 @@ export default function Home() {
 
       setAuthMessage('লগইন সফল হয়েছে।');
       setLoginForm(initialLoginForm);
-      await loadAdminStatus();
-      setTimeout(() => setShowAuthPanel(null), 800);
+
+      if (data.password_reset_required) {
+        setAdminState({ isAdmin: true, username: data.username, role: data.role, passwordResetRequired: true });
+        setShowAuthPanel(null);
+      } else {
+        await loadAdminStatus();
+        setTimeout(() => setShowAuthPanel(null), 800);
+      }
     } catch (error) {
       setAuthMessage(error instanceof Error ? error.message : 'লগইন হয়নি।');
     } finally {

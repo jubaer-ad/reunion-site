@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { signSession, SESSION_COOKIE, verifyPassword } from '@/lib/auth';
 
+function setAuthCookie(response: NextResponse, username: string) {
+  const token = signSession({ username, issuedAt: Date.now() });
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  response.headers.set(
+    'Set-Cookie',
+    `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Path=/; Max-Age=28800; SameSite=Lax${secure}`
+  );
+}
+
 export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
@@ -19,15 +28,8 @@ export async function POST(request: Request) {
     const needsReset = Boolean(admin.password_reset_required);
 
     if (needsReset && !password) {
-      const token = signSession({ username: admin.username, issuedAt: Date.now() });
       const response = NextResponse.json({ ok: true, username: admin.username, role: admin.role, password_reset_required: true });
-      response.cookies.set(SESSION_COOKIE, token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        maxAge: 60 * 60 * 8,
-      });
+      setAuthCookie(response, admin.username);
       return response;
     }
 
@@ -39,15 +41,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const token = signSession({ username: admin.username, issuedAt: Date.now() });
     const response = NextResponse.json({ ok: true, username: admin.username, role: admin.role });
-    response.cookies.set(SESSION_COOKIE, token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 8,
-    });
+    setAuthCookie(response, admin.username);
     return response;
   } catch (error) {
     console.error(error);
