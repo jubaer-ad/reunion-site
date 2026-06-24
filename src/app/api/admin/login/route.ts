@@ -19,9 +19,8 @@ export async function POST(request: Request) {
     const needsReset = Boolean(admin.password_reset_required);
 
     if (needsReset && !password) {
-      const response = NextResponse.json({ ok: true, username: admin.username, role: admin.role, password_reset_required: true });
       await setSessionCookie(admin.username);
-      return response;
+      return NextResponse.json({ ok: true, username: admin.username, role: admin.role, password_reset_required: true });
     }
 
     if (needsReset && password) {
@@ -32,10 +31,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const response = NextResponse.json({ ok: true, username: admin.username, role: admin.role });
     await setSessionCookie(admin.username);
-
-    return response;
+    return NextResponse.json({ ok: true, username: admin.username, role: admin.role });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });

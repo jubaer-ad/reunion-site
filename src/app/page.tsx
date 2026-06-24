@@ -333,6 +333,12 @@ export default function Home() {
   };
 
   const handleRequestDecision = async (requestId: string, action: 'approve' | 'reject') => {
+    setManagementData(prev => ({
+      ...prev,
+      requests: prev.requests.filter(r => String(r.id) !== requestId),
+    }));
+    setManagementMessage('');
+
     try {
       const res = await fetch(`/api/admin/requests/${requestId}`, {
         method: 'PATCH',
@@ -342,8 +348,9 @@ export default function Home() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'অপারেশন ব্যর্থ হয়েছে।');
       setManagementMessage('অনুরোধ আপডেট করা হয়েছে।');
-      await loadManagementData();
+      loadManagementData();
     } catch (error) {
+      loadManagementData();
       setManagementMessage(error instanceof Error ? error.message : 'অপারেশন ব্যর্থ হয়েছে।');
     }
   };
@@ -621,10 +628,14 @@ export default function Home() {
                       </div>
                       <p className="mt-2 text-slate-400">{String(request.email || '—')}</p>
                       <p className="mt-1 text-slate-400">{String(request.reason || '—')}</p>
-                      <div className="mt-3 flex gap-2">
-                        <button onClick={() => handleRequestDecision(String(request.id), 'approve')} className="rounded-lg bg-emerald-600 px-3 py-1 text-xs">Approve</button>
-                        <button onClick={() => handleRequestDecision(String(request.id), 'reject')} className="rounded-lg bg-rose-700 px-3 py-1 text-xs">Reject</button>
-                      </div>
+                      {request.status === 'pending' ? (
+                        <div className="mt-3 flex gap-2">
+                          <button onClick={() => handleRequestDecision(String(request.id), 'approve')} className="rounded-lg bg-emerald-600 px-3 py-1 text-xs">Approve</button>
+                          <button onClick={() => handleRequestDecision(String(request.id), 'reject')} className="rounded-lg bg-rose-700 px-3 py-1 text-xs">Reject</button>
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-xs text-slate-500">{String(request.status)}</p>
+                      )}
                     </div>
                   ))}
                 </div>

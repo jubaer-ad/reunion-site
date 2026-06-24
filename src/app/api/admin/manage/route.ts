@@ -10,7 +10,7 @@ export async function GET() {
     }
 
     const [requestsRes, adminsRes] = await Promise.all([
-      getDb().query('SELECT id, full_name, email, phone, reason, status, created_at FROM admin_requests ORDER BY created_at DESC'),
+      getDb().query("SELECT id, full_name, email, phone, reason, status, created_at FROM admin_requests WHERE status = 'pending' ORDER BY created_at DESC"),
       getDb().query('SELECT id, username, role, is_active, password_reset_required, created_at FROM admin_users ORDER BY created_at DESC'),
     ]);
 
