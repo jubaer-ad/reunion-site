@@ -4,11 +4,13 @@ import { signSession, SESSION_COOKIE, verifyPassword } from '@/lib/auth';
 
 function setAuthCookie(response: NextResponse, username: string) {
   const token = signSession({ username, issuedAt: Date.now() });
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  response.headers.set(
-    'Set-Cookie',
-    `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; Max-Age=28800; SameSite=Lax${secure}`
-  );
+  response.cookies.set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 8,
+  });
 }
 
 export async function POST(request: Request) {

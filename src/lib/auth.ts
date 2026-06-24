@@ -30,7 +30,10 @@ export function signSession(session: AdminSession) {
 
 export function verifySession(value: string | undefined): AdminSession | null {
   if (!value) return null;
-  const [payload, signature] = value.split('.');
+  const lastDot = value.lastIndexOf('.');
+  if (lastDot === -1) return null;
+  const payload = value.slice(0, lastDot);
+  const signature = value.slice(lastDot + 1);
   if (!payload || !signature) return null;
   const expected = createSignature(payload);
   if (expected !== signature) return null;
